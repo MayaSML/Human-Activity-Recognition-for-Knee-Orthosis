@@ -1,17 +1,13 @@
 <small>
 
-# REEV — Reconnaissance d'Activité pour Orthèse de Genou Motorisée
-*Rapport technique · Pipeline HAR embarqué · Classification IMU temps réel*
-
+# REEV- HAR : Reconnaissance d'Activité pour Orthèse de Genou Motorisée
 ---
-
 ## 1. Contexte et objectif
 
-Le projet REEV vise à classifier en temps réel **4 activités humaines** à partir de signaux inertiels (IMU) d'un smartphone, en vue du déploiement sur une orthèse de genou motorisée. Les classes cibles sont : `marche`, `assis`, `course`, `chute`.
+Ce projet vise à classifier en temps réel **4 activités humaines** à partir de signaux inertiels (IMU) d'un smartphone, en vue du déploiement sur une orthèse de genou motorisée. Les classes cibles sont : `marche`, `assis`, `course`, `chute`.
 
 Les contraintes système imposées sont une exécution embarquée temps réel, un modèle à empreinte réduite, et un pipeline entièrement reproductible.
 
----
 
 ## 2. Acquisition et données brutes
 
@@ -27,8 +23,6 @@ Les contraintes système imposées sont une exécution embarquée temps réel, u
 
 Le déséquilibre de classes entre `assis` (16 k) et `chute` (32 k) est compensé en aval via `class_weight='balanced'`.
 
----
-
 ## 3. Prétraitement
 
 Le pipeline de nettoyage opère les étapes suivantes sur les CSV bruts :
@@ -36,11 +30,9 @@ Le pipeline de nettoyage opère les étapes suivantes sur les CSV bruts :
 1. **Suppression des NaN** et détection des artefacts capteur
 2. **Clipping des valeurs extrêmes** à ±5σ (hors classe `chute`, pour conserver les pics d'impact)
 3. **Synchronisation accéléromètre / gyroscope** par interpolation linéaire à 100 Hz
-4. **Filtrage Butterworth passe-bas** (ordre 4, coupure à 20 Hz) — les mouvements humains étant majoritairement < 10 Hz, ce filtre supprime le bruit haute fréquence tout en préservant l'information cinématique utile
+4. **Filtrage Butterworth passe-bas** (ordre 4, coupure à 20 Hz)- les mouvements humains étant majoritairement < 10 Hz, ce filtre supprime le bruit haute fréquence tout en préservant l'information cinématique utile
 
 Le fichier résultant `dataset.csv` contient 102 216 lignes et 7 colonnes (`acc_x`, `acc_y`, `acc_z`, `gyro_x`, `gyro_y`, `gyro_z`, `label`).
-
----
 
 ## 4. Feature Engineering
 
@@ -54,7 +46,7 @@ Le fichier résultant `dataset.csv` contient 102 216 lignes et 7 colonnes (`acc_
 
 Une fenêtre de 2 s capture un cycle locomoteur complet ; le recouvrement de 50 % augmente le corpus d'entraînement et réduit le risque de manquer des événements courts (chute ~0,5–1 s).
 
-### Extraction de caractéristiques — 65 features par fenêtre
+### Extraction de caractéristiques - 65 features par fenêtre
 
 Chaque fenêtre brute (200 × 6 = 1 200 valeurs) est résumée en 65 caractéristiques :
 
@@ -63,8 +55,6 @@ Chaque fenêtre brute (200 × 6 = 1 200 valeurs) est résumée en 65 caractéris
 **Features globales :** magnitude accéléromètre (`mean`, `std`, `max`) + magnitude gyroscope (`mean`, `std`)
 
 Ce résumé statistique est particulièrement adapté à un Random Forest : dimensionnalité maîtrisée, invariance aux décalages temporels, interprétabilité directe.
-
----
 
 ## 5. Modèle et entraînement
 
@@ -78,8 +68,6 @@ Ce résumé statistique est particulièrement adapté à un Random Forest : dime
 | `class_weight`     | balanced | Compense le déséquilibre inter-classes |
 
 **Normalisation :** `StandardScaler` ajusté sur le train set uniquement, appliqué au test set.
-
----
 
 ## 6. Résultats
 
@@ -117,13 +105,11 @@ Les 2 erreurs observées (walk → fall) correspondent à des transitions brusqu
 
 ### Validation sur données hors-distribution
 
-Sur une session indépendante non utilisée à l'entraînement (233 fenêtres) : **99,1 % de prédictions correctes**, erreurs concentrées sur les transitions d'activité. La validation est à ce stade limitée à la classe `marche` — une évaluation multi-classes sur nouvelles sessions reste nécessaire.
-
----
+Sur une session indépendante non utilisée à l'entraînement (233 fenêtres) : **99,1 % de prédictions correctes**, erreurs concentrées sur les transitions d'activité. La validation est à ce stade limitée à la classe `marche` - une évaluation multi-classes sur nouvelles sessions reste nécessaire.
 
 ## 7. Déploiement et performance d'inférence
 
-Le pipeline complet (scaler + modèle) est exporté au format **ONNX** (`191 KB`), compatible avec les runtimes embarqués légers (ONNX Runtime, CoreML, etc.).
+Le pipeline complet (scaler + modèle) est exporté au format **ONNX** (`191 KB`), compatible avec les runtimes embarqués légers (ONNX Runtime...).
 
 | Métrique d'inférence | Valeur |
 |----------------------|-------:|
@@ -135,8 +121,6 @@ Le système produit une prédiction toutes les **1 seconde** (fenêtrage glissan
 
 *Mesures réalisées sur CPU standard (benchmark local). Les performances sur cible embarquée (MCU, smartphone) peuvent varier.*
 
----
-
 ## 8. Limites et perspectives
 
 | Limite actuelle | Impact | Piste d'amélioration |
@@ -146,11 +130,9 @@ Le système produit une prédiction toutes les **1 seconde** (fenêtrage glissan
 | Position smartphone fixe | Sensibilité aux variations d'orientation | Data augmentation + test multi-positions |
 | Validation partielle (marche uniquement) | Robustesse inter-classes non confirmée | Test sur toutes les classes hors-distribution |
 
----
-
 ## 9. Conclusion
 
-Le pipeline REEV permet la reconnaissance de 4 activités humaines avec une accuracy de **98,7 % sur données de test** et une latence d'inférence de **0,018 ms** pour un modèle de **191 KB** au format ONNX. Le système satisfait les contraintes d'embarquabilité et de temps réel fixées.
+ce pipeline permet la reconnaissance de 4 activités humaines avec une accuracy de **98,7 % sur données de test** et une latence d'inférence de **0,018 ms** pour un modèle de **191 KB** au format ONNX. Le système satisfait les contraintes d'embarquabilité et de temps réel fixées.
 
 Les priorités pour une mise en production sont : l'élargissement du corpus (volume, diversité sujets, conditions réelles) et la validation exhaustive sur toutes les classes en dehors de la distribution d'entraînement.
 
